@@ -4,6 +4,8 @@ import com.example.notifications.DTO.AnalyzedMedicationDTO;
 import com.example.notifications.Services.ImageAnalysisService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.notifications.Entities.Medication;
 import com.example.notifications.Services.MedicationService;
@@ -20,17 +22,46 @@ public class MedicationController {
     @Autowired
     private ImageAnalysisService imageAnalysisService;
 
+//    @PostMapping("/analyze-image")
+//    public AnalyzedMedicationDTO analyzeImage(@RequestParam("file") MultipartFile file) {
+//        // בדיקת תקינות ראשונית - אם הקובץ ריק, נזרוק שגיאה שתטופל ב-GlobalExceptionHandler שלך
+//        if (file == null || file.isEmpty()) {
+//            throw new IllegalArgumentException("חובה להעלות קובץ תמונה תקין שאינו ריק.");
+//        }
+//
+//        // קריאה לשירות ומסירת התמונה, התוצאה המפוענחת תחזור ישירות ל-Frontend
+//        return imageAnalysisService.analyzeMedicationImage(file);
+//    }
+
     @PostMapping("/analyze-image")
-    public AnalyzedMedicationDTO analyzeImage(@RequestParam("file") MultipartFile file) {
-        // בדיקת תקינות ראשונית - אם הקובץ ריק, נזרוק שגיאה שתטופל ב-GlobalExceptionHandler שלך
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("חובה להעלות קובץ תמונה תקין שאינו ריק.");
+    public ResponseEntity<?> analyzeImage(@RequestParam(value = "file", required = false) MultipartFile file) {
+        // 1. הדפסת בדיקה - האם הבקשה בכלל נכנסה לקונטרולר?
+        System.out.println(">>> CONTROLLER: Received a request to /analyze-image");
+
+        if (file == null) {
+            System.err.println(">>> CONTROLLER ERROR: MultipartFile 'file' is NULL! check React FormData name.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("הקובץ לא התקבל בשרת הג'אווה. ודא ששם השדה ב-FormData בריאקט הוא 'file'.");
         }
 
-        // קריאה לשירות ומסירת התמונה, התוצאה המפוענחת תחזור ישירות ל-Frontend
-        return imageAnalysisService.analyzeMedicationImage(file);
-    }
+        if (file.isEmpty()) {
+            System.err.println(">>> CONTROLLER ERROR: File was received but it is EMPTY.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("הקובץ שהועלה ריק.");
+        }
 
+        System.out.println(">>> CONTROLLER: File received successfully. Name: " + file.getOriginalFilename() + ", Size: " + file.getSize());
+
+        try {
+            AnalyzedMedicationDTO result = imageAnalysisService.analyzeMedicationImage(file);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println(">>> CONTROLLER ERROR: Exception caught inside controller execution:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("שגיאה פנימית במהלך עיבוד התמונה: " + e.getMessage());
+        }
+    }
     @PostMapping
     public Medication createMedication(@Valid @RequestBody Medication medication) {
         return medicationService.createMedication(medication);
@@ -48,6 +79,7 @@ public class MedicationController {
 
     @GetMapping("/user/{userId}")
     public List<Medication> getMedicationsByUserId(@PathVariable Long userId) {
+        System.out.println("DEBUG: נכנסתי לפונקציה עם ID: " );
         return medicationService.getMedicationsByUserId(userId);
     }
 

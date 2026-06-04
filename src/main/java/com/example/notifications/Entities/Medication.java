@@ -31,9 +31,13 @@ public class Medication {
     @Column(nullable = false)
     private String name;
 
-    @Min(value = 1, message = "המינון היומי חייב להיות לפחות 1")
+    @Min(value = 1, message = "התדירות היומית חייב להיות לפחות 1")
     @Column(nullable = false)
-    private int dosagePerDay;
+    private int frequency;
+
+    @NotBlank(message = "מינון התרופה אינו יכול להיות ריק")
+    @Column(nullable = false)
+    private String dosage;
 
     @NotNull(message = "חובה להזין תאריך סיום לטיפול")
     @FutureOrPresent(message = "תאריך הסיום לא יכול להיות בעבר")

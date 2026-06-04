@@ -17,7 +17,7 @@ public class NotificationsApplication {
 		// טעינת הקובץ .env לתוך משתני המערכת
 		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
-
+		System.setProperty("java.net.preferIPv4Stack", "true");
 		SpringApplication.run(NotificationsApplication.class, args);
 
 //		// 1. הגדרת הנתיב הבסיסי לתיקיית הפרויקט
