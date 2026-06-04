@@ -25,7 +25,7 @@ public class AnalyzedMedicationDTO {
 
     // שדה לקליטת מספר ימי הטיפול מהפייתון לצורך החישוב
     @JsonProperty("duration")
-    private int duration;
+    private Integer duration;
 
     // השדה הסופי שיחושב בג'אווה (לא מקבל @JsonProperty כי הוא מחושב פנימית)
     private LocalDate endDate;

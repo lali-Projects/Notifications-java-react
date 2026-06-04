@@ -32,18 +32,16 @@ public class MedicationService {
 
             // 2. בדיקה האם כל הנתונים זהים (מלבד התאריך)
             // נבדוק את המינון (dosagePerDay) ואת סוג לוח הזמנים (fixedSchedule)
-            if (existingMedication.getDosage() == newMedication.getDosage() &&existingMedication.getFrequency() == newMedication.getFrequency() &&
+            // שימוש ב-equals לצורך השוואת מחרוזות (dosage) ובדוק את ה-frequency החדש
+            if (existingMedication.getDosage().equals(newMedication.getDosage()) &&
+                    existingMedication.getFrequency() == newMedication.getFrequency() &&
                     existingMedication.isFixedSchedule() == newMedication.isFixedSchedule())
             {
-
                 // עדכון התאריך בלבד ושמירה
-                //האם להוסיף גם עידכון של תאריך הוספה
                 existingMedication.setEndDate(newMedication.getEndDate());
-                existingMedication.setCreatedAt(newMedication.getCreatedAt());
+                existingMedication.setCreatedAt(LocalDate.now()); // מעדכן לתאריך הנוכחי
                 return medicationRepository.save(existingMedication);
             }
-
-
         }
 
         // 3. אם לא נמצאה תרופה או שהנתונים האחרים שונים - יצירת תרופה חדשה

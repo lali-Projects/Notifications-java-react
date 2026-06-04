@@ -90,20 +90,11 @@ public class ImageAnalysisService {
         System.out.println("i come to java");
 
         try {
-            // 1. המרת הקובץ למשאב בייטים ששומר על שם הקובץ המקורי (FastAPI דורש את זה)
-            ByteArrayResource byteArrayResource = new ByteArrayResource(file.getBytes()) {
-                @Override
-                public String getFilename() {
-                    return file.getOriginalFilename();
-                }
-            };
-
-            // 2. בניית גוף הבקשה כ-Multipart
+            // 1. בניית גוף הבקשה כ-Multipart
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
 
-            // הצמדת ה-Content-Type המקורי של התמונה (למשל image/png) ישירות לחלק של הקובץ
-            builder.part("file", byteArrayResource)
-                    .contentType(MediaType.parseMediaType(file.getContentType()));
+            // 2. שימוש מובנה ב-Resource של הקובץ - שומר אוטומטית על השם המקורי וסוג הקובץ
+            builder.part("file", file.getResource());
 
             // 3. ביצוע הפנייה לשרת הפייתון
             AnalyzedMedicationDTO dto = webClient.post()
@@ -163,10 +154,16 @@ public class ImageAnalysisService {
     private void calculateAndSetEndDate(AnalyzedMedicationDTO dto) {
         System.out.println(">>> SERVICE: Starting date calculation...");
 
-        // בדיקה אם השדות הבסיסיים קיימים
+        // הגנה 1: בדיקה אם תאריך ההנפקה קיים
         if (dto.getIssueDateRaw() == null || dto.getIssueDateRaw().trim().isEmpty()) {
-            System.err.println(">>> SERVICE WARNING: issue_date is missing or empty from Python response. Skipping calculation.");
+            System.err.println(">>> SERVICE WARNING: issue_date is missing. Skipping calculation.");
             return;
+        }
+
+        // הגנה 2: בדיקה אם משך הזמן (duration) קיים
+        if (dto.getDuration() == null) {
+            System.err.println(">>> SERVICE WARNING: duration is missing (null). Setting duration to 0.");
+            dto.setDuration(0);
         }
 
         try {
@@ -175,29 +172,33 @@ public class ImageAnalysisService {
 
             LocalDate issueDate = null;
 
-            // הגנה כפולה: ננסה לזהות אם הפייתון שלח בפורמט ISO (YYYY-MM-DD) או בפורמט ישראלי (D/M/YYYY)
             if (rawDate.contains("-")) {
-                // פורמט פייתון טיפוסי: 2026-06-03
                 issueDate = LocalDate.parse(rawDate);
             } else if (rawDate.contains("/")) {
-                // פורמט ישראלי: 3/6/2026
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy");
+                String[] parts = rawDate.split("/");
+                String yearPart = parts[parts.length - 1];
+
+                java.time.format.DateTimeFormatter formatter;
+                if (yearPart.length() == 2) {
+                    formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yy");
+                } else {
+                    formatter = java.time.format.DateTimeFormatter.ofPattern("d/M/yyyy");
+                }
+
                 issueDate = LocalDate.parse(rawDate, formatter);
             } else {
                 throw new IllegalArgumentException("Unknown date format: " + rawDate);
             }
 
-            // חישוב תאריך הסיום
+            // חישוב תאריך הסיום (duration הוא כעת Integer, והפעולה עובדת חלק)
             LocalDate endDate = issueDate.plusDays(dto.getDuration());
             dto.setEndDate(endDate);
 
             System.out.println(">>> SERVICE: Date calculated successfully. End Date: " + endDate);
 
         } catch (Exception e) {
-            // מבודדים את השגיאה! מדפיסים אותה, אבל לא נותנים לה להכשיל את כל הבקשה
-            System.err.println(">>> SERVICE CRITICAL WARNING: Date calculation failed! But stopping crash. Error: " + e.getMessage());
+            System.err.println(">>> SERVICE CRITICAL WARNING: Date calculation failed! Error: " + e.getMessage());
             e.printStackTrace();
-            // אנחנו לא זורקים את השגיאה (بدون throw e), כדי שה-DTO יחזור לדפדפן גם בלי תאריך מחושב
         }
     }
 }
