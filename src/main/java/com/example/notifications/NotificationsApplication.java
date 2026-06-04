@@ -3,15 +3,21 @@ package com.example.notifications;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.File;
+import java.security.Security;
 
 @SpringBootApplication
 @EnableScheduling
 public class NotificationsApplication {
+
+	static {
+		Security.addProvider(new BouncyCastleProvider());
+	}
 
 	public static void main(String[] args) {
 		// טעינת הקובץ .env לתוך משתני המערכת

@@ -37,7 +37,7 @@ public class NotificationTask {
 
 
     // רץ בכל שעה עגולה יצירת התראה לטבלת התראות
-    // @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */2 * * * *")
     public void generateHourlyNotifications() {
         LocalDateTime now = LocalDateTime.now();
         LocalTime currentTime = now.toLocalTime();
@@ -70,7 +70,7 @@ public class NotificationTask {
         }
     }
     // 2. ניקוי יומי של תרופות שתוקפן פג (רץ בחצות)
-  //  @Scheduled(cron = "0 0 0 * * *")
+   @Scheduled(cron = "0 0 0 * * *")
     public void runDailyCleanup() {
         System.out.println("Starting daily cleanup of expired medications...");
         medicationService.cleanupExpiredMedications();
@@ -80,7 +80,7 @@ public class NotificationTask {
 
     // רץ פעם בשעה (3,600,000 מילישניות)
     //מחיקת התראות מטבלת התראות
-   // @Scheduled(fixedDelay = 3600000)
+    @Scheduled(fixedDelay = 3600000)
     @Transactional
     public void cleanupOldData() {
         // הגדרת זמן חיתוך של שעה אחורה למניעת התנגשויות בזמן אמת
@@ -118,7 +118,7 @@ public class NotificationTask {
         notificationRepository.deleteOld(cutoff);
     }
 
-  //  @Scheduled(fixedDelay = 30000) // ריצה כל 30 שניות
+    @Scheduled(fixedDelay = 30000) // ריצה כל 30 שניות
     @Transactional
     public void sendUnsentNotifications() {
         LocalDateTime now = LocalDateTime.now();
