@@ -22,16 +22,7 @@ public class MedicationController {
     @Autowired
     private ImageAnalysisService imageAnalysisService;
 
-//    @PostMapping("/analyze-image")
-//    public AnalyzedMedicationDTO analyzeImage(@RequestParam("file") MultipartFile file) {
-//        // בדיקת תקינות ראשונית - אם הקובץ ריק, נזרוק שגיאה שתטופל ב-GlobalExceptionHandler שלך
-//        if (file == null || file.isEmpty()) {
-//            throw new IllegalArgumentException("חובה להעלות קובץ תמונה תקין שאינו ריק.");
-//        }
-//
-//        // קריאה לשירות ומסירת התמונה, התוצאה המפוענחת תחזור ישירות ל-Frontend
-//        return imageAnalysisService.analyzeMedicationImage(file);
-//    }
+
 
     @PostMapping("/analyze-image")
     public ResponseEntity<?> analyzeImage(@RequestParam(value = "file", required = false) MultipartFile file) {
