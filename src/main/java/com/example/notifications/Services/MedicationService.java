@@ -114,43 +114,65 @@ public Medication createMedication(Medication newMedication) {
         return medications;
     }
 
-//    public Medication updateMedication(Long id, Medication updatedMedication) {
-//        Medication existingMedication = getMedicationById(id);
-//
-//        existingMedication.setName(updatedMedication.getName());
-//        existingMedication.setDosage(updatedMedication.getDosage());
-//        existingMedication.setFrequency(updatedMedication.getFrequency());
-//        existingMedication.setEndDate(updatedMedication.getEndDate());
-//        existingMedication.setFixedSchedule(updatedMedication.isFixedSchedule());
-//
-//        return medicationRepository.save(existingMedication);
-//    }
-@Transactional
-public Medication updateMedication(Long id, Medication updatedMedication) {
-    Medication existingMedication = getMedicationById(id);
+    @Transactional
+    public Medication updateMedication(Long id, Medication updatedMedication) {
+        // 1. שליפת התרופה הקיימת מה-DB לפי ה-ID שלה
+        Medication existingMedication = getMedicationById(id);
 
-    // עדכון שדות בסיסיים
-    existingMedication.setName(updatedMedication.getName());
-    existingMedication.setDosage(updatedMedication.getDosage());
-    existingMedication.setFrequency(updatedMedication.getFrequency());
-    existingMedication.setEndDate(updatedMedication.getEndDate());
-    existingMedication.setFixedSchedule(updatedMedication.isFixedSchedule());
+        // 2. עדכון השדות הבסיסיים של התרופה
+        existingMedication.setName(updatedMedication.getName());
+        existingMedication.setDosage(updatedMedication.getDosage());
+        existingMedication.setFrequency(updatedMedication.getFrequency());
+        existingMedication.setEndDate(updatedMedication.getEndDate());
+        existingMedication.setFixedSchedule(updatedMedication.isFixedSchedule());
+        existingMedication.setCreatedAt(LocalDate.now());
 
-    // פתרון הבעיה השנייה: עדכון מערך השעות בעת עריכה רגילה
-    if (updatedMedication.getSchedules() != null) {
-        // בזכות orphanRemoval = true, ניקוי הרשימה ימחק את השורות הישנות מה-DB
-        existingMedication.getSchedules().clear();
+        // 3. עדכון זמני הנטילה באמצעות הלולאה היעילה (לפי אינדקסים)
+        if (updatedMedication.getSchedules() != null && !updatedMedication.getSchedules().isEmpty()) {
+            List<MedicationSchedule> existingSchedules = existingMedication.getSchedules();
+            List<MedicationSchedule> newSchedules = updatedMedication.getSchedules();
 
-        for (MedicationSchedule schedule : updatedMedication.getSchedules()) {
-            schedule.setMedication(existingMedication); // חובה לקשר את התרופה לכל שעה
-            existingMedication.getSchedules().add(schedule);
+            // כאן בדיוק נכנסת הלולאה שמבצעת UPDATE בלבד ב-DB ללא מחיקות מיותרות!
+            for (int i = 0; i < newSchedules.size(); i++) {
+                if (i < existingSchedules.size()) {
+                    existingSchedules.get(i).setTimeOfDay(newSchedules.get(i).getTimeOfDay());
+
+                    // שימוש ב-setTake ו-isTake המעודכנים של אופציה א'
+                    existingSchedules.get(i).setTake(newSchedules.get(i).isTake());
+                }
+            }
         }
-    } else {
-        existingMedication.getSchedules().clear();
+
+        // 4. שמירה סופית של הישות המעודכנת
+        return medicationRepository.save(existingMedication);
     }
 
-    return medicationRepository.save(existingMedication);
-}
+//@Transactional
+//public Medication updateMedication(Long id, Medication updatedMedication) {
+//    Medication existingMedication = getMedicationById(id);
+//
+//    // עדכון שדות בסיסיים
+//    existingMedication.setName(updatedMedication.getName());
+//    existingMedication.setDosage(updatedMedication.getDosage());
+//    existingMedication.setFrequency(updatedMedication.getFrequency());
+//    existingMedication.setEndDate(updatedMedication.getEndDate());
+//    existingMedication.setFixedSchedule(updatedMedication.isFixedSchedule());
+//
+//    // פתרון הבעיה השנייה: עדכון מערך השעות בעת עריכה רגילה
+//    if (updatedMedication.getSchedules() != null) {
+//        // בזכות orphanRemoval = true, ניקוי הרשימה ימחק את השורות הישנות מה-DB
+//        existingMedication.getSchedules().clear();
+//
+//        for (MedicationSchedule schedule : updatedMedication.getSchedules()) {
+//            schedule.setMedication(existingMedication); // חובה לקשר את התרופה לכל שעה
+//            existingMedication.getSchedules().add(schedule);
+//        }
+//    } else {
+//        existingMedication.getSchedules().clear();
+//    }
+//
+//    return medicationRepository.save(existingMedication);
+//}
     public void deleteMedication(Long id) {
 
         if (!medicationRepository.existsById(id)) {

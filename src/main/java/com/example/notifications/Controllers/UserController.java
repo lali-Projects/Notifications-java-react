@@ -2,6 +2,7 @@ package com.example.notifications.Controllers;
 
 import java.util.List;
 
+import com.example.notifications.DTO.UserUpdateDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -34,11 +35,15 @@ public class UserController {
     public User getUserByEmail(@PathVariable String email) {
         return userService.getUserByEmail(email);
     }
-    @PutMapping("/email/{email}")
-    public User updateUserByEmail(@Valid @PathVariable String email, @RequestBody User user) {
-        return userService.updateUserByEmail(email, user);
-    }
 
+
+    @PutMapping("/email/{email}")
+    public User updateUserByEmail(
+            @PathVariable String email,
+            @Valid @RequestBody UserUpdateDTO updateDto
+    ) {
+        return userService.updateUserByEmail(email, updateDto);
+    }
 //    @DeleteMapping("/{id}")
 //    public void deleteUser(@PathVariable Long id) {
 //        userService.deleteUser(id);

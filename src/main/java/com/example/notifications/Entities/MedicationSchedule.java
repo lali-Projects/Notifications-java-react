@@ -35,7 +35,8 @@ public class MedicationSchedule {
     @Column(nullable = false)
     private LocalTime timeOfDay;
 
+
     @Column(nullable = false)
-    @JsonProperty("isTake")
-    private boolean isTake;
+    @JsonProperty("isTake") // שומר על תאימות מלאה לריאקט ששולח "isTake"
+    private boolean take;
 }

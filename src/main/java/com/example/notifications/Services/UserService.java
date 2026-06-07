@@ -1,6 +1,8 @@
 package com.example.notifications.Services;
 
 import java.util.List;
+
+import com.example.notifications.DTO.UserUpdateDTO;
 import com.example.notifications.Exceptions.ConflictException;
 import com.example.notifications.Exceptions.ResourceNotFoundException; // הוסף אימפורט
 import jakarta.transaction.Transactional;
@@ -42,25 +44,55 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email)); // שינוי ל-ResourceNotFoundException
     }
-
-    public User updateUserByEmail(String email, User updatedUser) {
+    public User updateUserByEmail(String email, UserUpdateDTO updateDto) {
+        // 1. שליפת המשתמש הקיים מהדאטה-בייס
         User existingUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found")); // שינוי
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (!email.equals(updatedUser.getEmail()) &&
-                userRepository.existsByEmail(updatedUser.getEmail())) {
-            throw new ConflictException("Email already exists"); // שינוי ל-ConflictException
+        // 2. בדיקה אם האימייל החדש תפוס על ידי משתמש אחר
+        if (!email.equals(updateDto.getEmail()) &&
+                userRepository.existsByEmail(updateDto.getEmail())) {
+            throw new ConflictException("Email already exists");
         }
 
-        existingUser.setName(updatedUser.getName());
-        existingUser.setEmail(updatedUser.getEmail());
-        existingUser.setPassword(updatedUser.getPassword());
-        existingUser.setPushEndpoint(updatedUser.getPushEndpoint());
-        existingUser.setPushP256dh(updatedUser.getPushP256dh());
-        existingUser.setPushAuth(updatedUser.getPushAuth());
+        // 3. עדכון השדות הבסיסיים מתוך ה-DTO
+        existingUser.setName(updateDto.getName());
+        existingUser.setEmail(updateDto.getEmail());
 
+        // 4. עדכון שדות ה-Push רק אם הם סופקו ב-DTO (לא null)
+        if (updateDto.getPushEndpoint() != null) {
+            existingUser.setPushEndpoint(updateDto.getPushEndpoint());
+        }
+        if (updateDto.getPushP256dh() != null) {
+            existingUser.setPushP256dh(updateDto.getPushP256dh());
+        }
+        if (updateDto.getPushAuth() != null) {
+            existingUser.setPushAuth(updateDto.getPushAuth());
+        }
+
+        // הסיסמה (password) של existingUser נשארת כפי שהייתה ולא משתנה!
+
+        // 5. שמירה סופית בדאטה-בייס והחזרת הישות המעודכנת
         return userRepository.save(existingUser);
     }
+//    public User updateUserByEmail(String email, User updatedUser) {
+//        User existingUser = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found")); // שינוי
+//
+//        if (!email.equals(updatedUser.getEmail()) &&
+//                userRepository.existsByEmail(updatedUser.getEmail())) {
+//            throw new ConflictException("Email already exists"); // שינוי ל-ConflictException
+//        }
+//
+//        existingUser.setName(updatedUser.getName());
+//        existingUser.setEmail(updatedUser.getEmail());
+//        existingUser.setPassword(updatedUser.getPassword());
+//        existingUser.setPushEndpoint(updatedUser.getPushEndpoint());
+//        existingUser.setPushP256dh(updatedUser.getPushP256dh());
+//        existingUser.setPushAuth(updatedUser.getPushAuth());
+//
+//        return userRepository.save(existingUser);
+//    }
 
     @Transactional
     public void deleteUserByEmail(String email) {
